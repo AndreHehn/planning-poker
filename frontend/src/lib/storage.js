@@ -3,19 +3,21 @@ const key = (roomId) => {
   return `pp_session_${roomId}_${today}`
 }
 
+function pruneStaleSessionKeys(roomId) {
+  const current = key(roomId)
+  Object.keys(localStorage)
+    .filter(k => k.startsWith(`pp_session_${roomId}_`) && k !== current)
+    .forEach(k => localStorage.removeItem(k))
+}
+
 export function saveSession(roomId, session) {
   localStorage.setItem(key(roomId), JSON.stringify(session))
 }
 
 export function loadSession(roomId) {
-  const current = key(roomId)
-  // Prune stale keys for this room
-  Object.keys(localStorage)
-    .filter(k => k.startsWith(`pp_session_${roomId}_`) && k !== current)
-    .forEach(k => localStorage.removeItem(k))
-
-  const raw = localStorage.getItem(current)
-  return raw ? JSON.parse(raw) : null
+  pruneStaleSessionKeys(roomId)
+  const raw = localStorage.getItem(key(roomId))
+  try { return raw ? JSON.parse(raw) : null } catch { return null }
 }
 
 export function clearSession(roomId) {

@@ -1,10 +1,14 @@
 import { nanoid } from 'nanoid'
-
-const MAX_USERS = Number(process.env.MAX_USERS_PER_ROOM) || 0
+import { deleteRoom } from './roomStore.js'
+import { MAX_USERS_PER_ROOM, EMPTY_ROOM_TTL_MS } from './config.js'
 
 export function handleConnection(socket, room) {
   const userId = nanoid(6)
   let user = null
+
+  // Clear any pending room deletion immediately — an incoming socket means the room is active
+  clearTimeout(room.emptyTimer)
+  room.emptyTimer = null
 
   socket.on('message', (raw) => {
     let msg
@@ -19,18 +23,27 @@ export function handleConnection(socket, room) {
         const existing = [...room.users.values()].find(
           u => u.name.toLowerCase() === name.toLowerCase()
         )
-        if (!existing && MAX_USERS > 0 && room.users.size >= MAX_USERS) {
-          socket.close(4429, 'room full')
-          return
-        }
+
         if (existing) {
+          if (existing.connected && msg.rejoinToken !== existing.rejoinToken) {
+            socket.close(4403, 'name taken')
+            return
+          }
           existing.socket = socket
           existing.connected = true
           user = existing
+          socket.send(JSON.stringify({ type: 'joined', rejoinToken: existing.rejoinToken }))
         } else {
-          user = { id: userId, name, role, vote: null, connected: true, socket: socket }
+          if (MAX_USERS_PER_ROOM > 0 && room.users.size >= MAX_USERS_PER_ROOM) {
+            socket.close(4429, 'room full')
+            return
+          }
+          const rejoinToken = nanoid(16)
+          user = { id: userId, name, role, vote: null, connected: true, socket, rejoinToken }
           room.users.set(userId, user)
+          socket.send(JSON.stringify({ type: 'joined', rejoinToken }))
         }
+
         broadcast(room)
         break
       }
@@ -71,11 +84,16 @@ export function handleConnection(socket, room) {
       user.connected = false
       user.socket = null
       broadcast(room)
+
+      const anyConnected = [...room.users.values()].some(u => u.connected)
+      if (!anyConnected) {
+        room.emptyTimer = setTimeout(() => deleteRoom(room.id), EMPTY_ROOM_TTL_MS)
+      }
     }
   })
 }
 
-export function broadcast(room) {
+function broadcast(room) {
   const payload = JSON.stringify({
     type: 'stateUpdate',
     roomId: room.id,

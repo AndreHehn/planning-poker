@@ -2,6 +2,7 @@
   import { fly } from 'svelte/transition'
   import { t } from '../lib/i18n.js'
 
+
   export let users = []
 
   $: participants = users.filter(u => u.role === 'participant' && u.vote !== null)
@@ -33,7 +34,7 @@
         <span class="consensus-badge">{$t('results.consensus')}</span>
       {/if}
       {#if average !== null}
-        <span class="avg">Ø {average}</span>
+        <span class="avg">{$t('results.average')} {average}</span>
       {/if}
     </div>
 

@@ -1,8 +1,7 @@
 import { nanoid } from 'nanoid'
+import { ROOM_TTL_MS, MAX_ROOMS } from './config.js'
 
 const rooms = new Map()
-const TTL = (Number(process.env.ROOM_TTL_HOURS) || 24) * 60 * 60 * 1000
-const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 0
 
 export function createRoom(scaleName, scale) {
   if (MAX_ROOMS > 0 && rooms.size >= MAX_ROOMS) return null
@@ -14,7 +13,8 @@ export function createRoom(scaleName, scale) {
     users: new Map(),
     revealed: false,
     createdAt: Date.now(),
-    expiryTimer: null
+    expiryTimer: null,
+    emptyTimer: null
   }
   rooms.set(id, room)
   scheduleExpiry(id)
@@ -29,6 +29,7 @@ export function deleteRoom(id) {
   const room = rooms.get(id)
   if (!room) return
   clearTimeout(room.expiryTimer)
+  clearTimeout(room.emptyTimer)
   for (const user of room.users.values()) {
     if (user.socket?.readyState === 1) {
       user.socket.close(4410, 'room expired')
@@ -40,6 +41,6 @@ export function deleteRoom(id) {
 function scheduleExpiry(id) {
   const room = rooms.get(id)
   if (!room) return
-  room.expiryTimer = setTimeout(() => deleteRoom(id), TTL)
+  room.expiryTimer = setTimeout(() => deleteRoom(id), ROOM_TTL_MS)
   room.expiryTimer.unref()
 }

@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte'
-  import { roomState, connect, disconnect, send } from '../lib/ws.js'
+  import { roomState, reconnecting, connect, disconnect, send } from '../lib/ws.js'
   import { loadSession, saveSession } from '../lib/storage.js'
   import { t } from '../lib/i18n.js'
   import { fly } from 'svelte/transition'
@@ -20,7 +20,7 @@
 
   $: state = $roomState
 
-  $: if (state && !state.expired && !state.notFound && !myUserId) {
+  $: if (state && !state.expired && !state.notFound && !state.nameTaken && !myUserId) {
     const me = state.users.find(u => u.name.toLowerCase() === session?.name?.toLowerCase())
     if (me) myUserId = me.id
   }
@@ -90,8 +90,19 @@
     <a href="/">{$t('room.newRoom')}</a>
   </div>
 
+{:else if state.nameTaken}
+  <div class="error-page">
+    <h2>{$t('room.nameTaken')}</h2>
+    <p>{$t('room.nameTakenDesc')}</p>
+    <a href="/">{$t('room.backHome')}</a>
+  </div>
+
 {:else}
   <div class="room">
+    {#if $reconnecting}
+      <div class="reconnecting-banner">{$t('room.reconnecting')}</div>
+    {/if}
+
     <header>
       <div class="room-info">
         <span class="scale-tag">{state.scaleName}</span>
@@ -165,6 +176,16 @@
     display: flex;
     flex-direction: column;
     gap: 2rem;
+  }
+
+  .reconnecting-banner {
+    background: rgba(var(--accent-rgb), 0.1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
   }
 
   header {

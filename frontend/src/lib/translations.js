@@ -34,6 +34,11 @@ export const translations = {
     'reveal.newRound':   'Neue Runde',
 
     'results.consensus': 'Konsens!',
+    'results.average':   'Ø',
+
+    'room.nameTaken':     'Name bereits vergeben',
+    'room.nameTakenDesc': 'Dieser Name wird bereits von einem aktiven Teilnehmer verwendet.',
+    'room.reconnecting':  'Verbindung wird wiederhergestellt…',
 
     'scales.fibonacci':  'Fibonacci',
     'scales.tshirt':     'T-Shirt',
@@ -74,6 +79,11 @@ export const translations = {
     'reveal.newRound':   'New round',
 
     'results.consensus': 'Consensus!',
+    'results.average':   'Ø',
+
+    'room.nameTaken':     'Name already taken',
+    'room.nameTakenDesc': 'This name is already used by an active participant.',
+    'room.reconnecting':  'Reconnecting…',
 
     'scales.fibonacci':  'Fibonacci',
     'scales.tshirt':     'T-Shirt',
